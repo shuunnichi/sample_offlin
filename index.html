@@ -16,150 +16,122 @@
 
   <main>
     <section>
-      <h2>1. はじめに：Webサイトの「当たり前」を覆す技術</h2>
-      <p>皆さんは、電車の中やトンネル、電波の悪いカフェなどでWebサイトを見ようとして、こんな画面にがっかりした経験はありませんか？</p>
-
-      <img src="https://via.placeholder.com/800x300.png?text=Chrome+Offline+Dinosaur+Game" alt="インターネットに接続されていません というエラー画面">
-      <p>「インターネットに接続されていません」――。<br>
-      これは、Webサイトが<strong>オンラインであることが大前提</strong>で成り立っている以上、仕方のないことでした。しかし、この"当たり前"を覆し、Webサイトをまるでスマホアプリのようにオフラインでも利用可能にする技術があります。</p>
-      <p>それが、<strong>PWA (Progressive Web Apps)</strong> の中核技術の一つ、<strong>Service Worker（サービスワーカー）</strong>です。</p>
-      <p>この記事では、Service WorkerがどのようにしてWebページをオフライン対応させるのか、その仕組みを紐解き、実際に簡単なWebページをオフラインでも閲覧できるようにする手順をハンズオン形式で解説します。</p>
+      <h2>1. 序論：Webアプリケーションの堅牢性向上とPWA</h2>
+      <p>従来のWebアプリケーションは、その動作を安定したネットワーク接続に依存するアーキテクチャを基本としてきた。しかし、モバイルデバイスの普及や多様な利用環境の出現により、ネットワーク接続が不安定あるいは完全に利用不可となる状況は頻繁に発生する。このような状況下でアプリケーションの機能が完全に停止することは、ユーザーエクスペリエンスを著しく損なう要因となる。</p>
+      <p>この課題に対する有力な解決策が、<strong>PWA (Progressive Web Apps)</strong> の中核技術の一つである<strong>Service Worker</strong>の活用である。</p>
+      <p>Service Workerは、Webページとは独立したライフサイクルを持つイベント駆動型のスクリプトであり、アプリケーションとネットワーク間の通信を仲介するクライアントサイドプロキシとして機能する。このプロキシ機能を利用してリクエストをインターセプトし、キャッシュされたリソースを応答することで、オフライン環境下においてもWebアプリケーションの基本的な動作を保証することが可能となる。</p>
+      <p>本稿では、Service Workerの基本的なライフサイクルとイベントを解説し、Cache Storage APIと連携してオフライン対応を実現する具体的な実装方法を示す。</p>
     </section>
 
     <section>
-      <h2>2. Service Workerとは？ - Webサイトの裏で働く”執事”</h2>
-      <p>Service Workerとは、一言で言うと<strong>「Webページの裏側で動く、独立したJavaScriptファイル」</strong>です。</p>
-      <p>通常のJavaScript (<code>&lt;script&gt;</code>タグで読み込むもの) とは異なり、Webページとは別のスレッドで動作するため、ページを閉じても動き続けることができます。この特性を活かして、プッシュ通知やバックグラウンド同期など、様々な高度な機能を実現します。</p>
-      <p>オフライン対応において、Service WorkerはWebページとネットワークの間に立つ<strong>”執事”</strong>のような役割を果たします。</p>
-
-      <img src="https://via.placeholder.com/800x250.png?text=Browser+%3C-%3E+Service+Worker+%3C-%3E+Network" alt="Service Workerの役割を示す図">
-
-      <p>ブラウザが「このページが欲しい」「この画像が欲しい」とリクエストするたびに、Service Workerがそのリクエストを一旦預かります。そして、「そのリクエストされたものは、以前お預かりした<strong>キャッシュ（予備データ）</strong>にございますか？」と確認し、あればネットワーク通信を行わずにキャッシュからデータを返します。</p>
-      <p>この<strong>「通信を横取り（インターセプト）して、キャッシュを利用する」</strong>仕組みこそが、オフライン対応の心臓部なのです。</p>
+      <h2>2. Service Workerの技術的概要</h2>
+      <p>Service Workerは、ブラウザによってメインのUIスレッドとは別のグローバルスクリプトコンテキストで実行されるJavaScriptファイルである。これにより、UIのブロッキングを発生させることなく、バックグラウンドでタスクを実行できる。主な技術的特徴は以下の通りである。</p>
+      <ul>
+        <li><strong>独立したライフサイクル:</strong> Service WorkerはWebページとは別にインストール・有効化され、ページが閉じられた後も動作を継続できる。</li>
+        <li><strong>イベント駆動:</strong> `install`, `activate`, `fetch`といった特定のイベントをトリガーとして動作する。</li>
+        <li><strong>プロキシ機能:</strong> `fetch`イベントを捕捉することで、スコープ内のページが生成するすべてのネットワークリクエストをインターセプトし、応答を任意に操作できる。</li>
+        <li><strong>DOMへの非アクセス:</strong> セキュリティ上の理由から、Service Workerは直接DOMにアクセスすることはできない。ページとの通信には`postMessage`インターフェースを使用する。</li>
+      </ul>
+      <p>オフライン対応の実装において最も重要なのは、このプロキシ機能である。Service Workerは、ネットワークリクエストを監視し、リクエストされたリソースがキャッシュに存在する場合はネットワークへのアクセスを行わずにキャッシュから応答を返す。このメカニズムが、オフライン時におけるアプリケーションの可用性を実現する。</p>
+      <img src="https://via.placeholder.com/800x250.png?text=Browser+%3C-%3E+Service+Worker+(Proxy)+%3C-%3E+Network" alt="Service Workerのプロキシとしての役割を示す図">
     </section>
 
     <section>
-      <h2>3. オフライン対応の2ステップ</h2>
-      <p>Service Workerを使ってオフライン対応を実現するには、大きく分けて2つのステップが必要です。</p>
+      <h2>3. Service Workerのライフサイクルとキャッシュ戦略</h2>
+      <p>Service Workerによるオフライン対応は、主に`install`と`fetch`の2つのイベントに対する処理で構成される。</p>
       <ol>
-        <li><strong>インストール (Install)</strong>：初めてサイトに訪れた時に、オフラインでも表示したいファイルをあらかじめキャッシュに保存する。</li>
-        <li><strong>有効化とリクエスト処理 (Activate & Fetch)</strong>：サイトへのリクエストを監視し、キャッシュがあればそこから返し、なければネットワークから取得する。</li>
+        <li><strong>インストール (installイベント)</strong>: Service Workerがブラウザに初めて登録される際に一度だけ発生する。このフェーズで、オフライン時に必要となる静的リソース（アセット）を事前にCache Storage APIを用いてキャッシュする。これを「プリキャッシュ」と呼ぶ。</li>
+        <li><strong>リクエスト処理 (fetchイベント)</strong>: Service Workerのスコープ内でネットワークリクエストが発生するたびにトリガーされる。ここでリクエストをインターセプトし、採用するキャッシュ戦略に基づいて応答を生成する。</li>
       </ol>
-      <p>それでは、実際にコードを見ながら、この2つのステップを実装していきましょう。</p>
+      <p>本稿で実装するのは、「キャッシュファースト（Cache First）」と呼ばれる戦略である。これは、まずキャッシュの存在を確認し、ヒットすればキャッシュから応答する。キャッシュに存在しない場合のみ、ネットワークへリクエストをフォールスルーさせる戦略である。</p>
     </section>
 
     <section>
-      <h2>4. ハンズオン：実際にオフラインページを作ってみよう！</h2>
-      <p>今回は、以下のようなシンプルな構成のWebサイトをオフライン対応させます。</p>
+      <h2>4. 実装例：基本的なオフライン対応</h2>
+      <p>以下のファイル構成を想定し、Service Workerによるオフライン対応を実装する。</p>
       <pre><code class="language-text">my-offline-site/
 ├── index.html
 ├── style.css
-├── app.js       (Service Workerを登録するJS)
+├── app.js       (Service Workerの登録処理)
 └── sw.js        (Service Worker本体)</code></pre>
 
-      <h3>Step 1: Service Workerを"登録"する</h3>
-      <p>まず、私たちのWebページに「これからService Workerを使いますよ」と教えてあげる必要があります。この処理は、メインのJavaScriptファイル (<code>app.js</code>) に記述します。</p>
-
+      <h3>Step 1: Service Workerの登録</h3>
+      <p>まず、アプリケーションのエントリーポイントとなるJavaScriptファイル（`app.js`）からService Workerを登録する。</p>
       <pre><code class="language-javascript">// app.js
 
-// ブラウザがService Workerに対応しているか確認
+// Service Worker機能のサポート状況を確認
 if ('serviceWorker' in navigator) {
-  // ページが完全に読み込まれた後に、Service Workerファイルを登録
+  // loadイベント発火後に登録処理を実行
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('./sw.js')
       .then(registration => {
-        console.log('Service Worker 登録成功:', registration);
+        console.log('Service Worker registered: ', registration);
       })
       .catch(error => {
-        console.log('Service Worker 登録失敗:', error);
+        console.log('Service Worker registration failed: ', error);
       });
   });
 }</code></pre>
-      <p>このコードにより、ブラウザは <code>sw.js</code> というファイルを特別なプログラムとして認識し、バックグラウンドで実行を開始します。</p>
 
-      <h3>Step 2: "インストール"時にファイルをキャッシュする</h3>
-      <p>次に、Service Worker本体である <code>sw.js</code> の中身を書いていきます。Service Workerが初めて登録されると、<code>install</code> というイベントが発生します。このタイミングで、オフラインでも表示したいファイルをキャッシュに保存します。</p>
-
+      <h3>Step 2: リソースのプリキャッシュ (`install`イベント)</h3>
+      <p>Service Worker本体（`sw.js`）で`install`イベントをリッスンし、必要なアセットをキャッシュに保存する。</p>
       <pre><code class="language-javascript">// sw.js
 
-// キャッシュの名前とバージョンを定義
 const CACHE_NAME = 'my-offline-cache-v1';
-// キャッシュするファイルのリスト
 const FILES_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js'
+  './',
+  './index.html',
+  './style.css',
+  './app.js'
 ];
 
-// `self` はService Worker自身を指す
-// installイベントは、Service Workerがインストールされるときに一度だけ実行される
+// selfはService Workerのグローバルスコープ
 self.addEventListener('install', (event) => {
-  // install処理が終わるまで、他のイベントを待機させる
+  // waitUntilは、渡されたPromiseが解決されるまでinstallフェーズを完了させない
   event.waitUntil(
-    // `caches`はブラウザのキャッシュストレージAPI
-    // 指定した名前でキャッシュを開く
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('キャッシュを開きました');
-        // 指定したファイルをすべてキャッシュに追加する
+        console.log('Cache opened');
+        // 指定されたリソースをすべてキャッシュに追加する
         return cache.addAll(FILES_TO_CACHE);
       })
   );
 });</code></pre>
-      <p><code>FILES_TO_CACHE</code> に指定されたファイルが、ユーザーの初回アクセス時にブラウザのキャッシュストレージに保存されます。</p>
 
-      <h3>Step 3: "リクエスト"を横取りしてキャッシュを返す</h3>
-      <p>最後に、<code>fetch</code> イベントを実装します。これは、ページが画像やCSSなど、何かしらのリソースをリクエストするたびに発生します。ここでリクエストを横取りし、キャッシュの有無によって応答を切り替えます。</p>
-
+      <h3>Step 3: キャッシュからの応答 (`fetch`イベント)</h3>
+      <p>最後に`fetch`イベントをリッスンし、キャッシュファースト戦略を実装する。</p>
       <pre><code class="language-javascript">// sw.js (続き)
 
-// fetchイベントは、ページがリクエストを送信するたびに発生する
 self.addEventListener('fetch', (event) => {
-  // ブラウザのデフォルトのfetch処理を上書きする
+  // respondWithは、ブラウザのデフォルトのfetchハンドリングを上書きする
   event.respondWith(
-    // まずキャッシュ内にリクエストと一致するものがあるか探す
+    // caches.match()で、リクエストに一致するキャッシュされた応答を検索
     caches.match(event.request)
       .then((response) => {
-        // もしキャッシュにあれば、それを返す (ネットワーク通信は発生しない)
+        // キャッシュにヒットした場合、その応答を返す
         if (response) {
-          console.log('キャッシュから応答:', event.request.url);
+          console.log('Responding from cache:', event.request.url);
           return response;
         }
-
-        // キャッシュになければ、通常通りネットワークから取得する
-        console.log('ネットワークから取得:', event.request.url);
+        // キャッシュにない場合、ネットワークにリクエストを送信する
+        console.log('Fetching from network:', event.request.url);
         return fetch(event.request);
       })
   );
 });</code></pre>
-      <p>この<code>fetch</code>イベントの実装こそが、オフライン対応の魔法の正体です。キャッシュにデータがあれば、ネットワークに一切アクセスすることなく、瞬時にページを表示させることができるのです。</p>
-
-      <h3>Step 4: 動作を確認してみよう！</h3>
-      <p>実装が完了したら、実際に動作を確認してみましょう。Chromeのデベロッパーツールが便利です。</p>
-      <ol>
-        <li>Webサーバーでページをホストし、一度アクセスします。（ローカルファイルを直接開く方法ではService Workerは動作しないため注意が必要です）</li>
-        <li>デベロッパーツールを開き（<code>F12</code>キー or <code>Ctrl+Shift+I</code>）、<code>Application</code> タブを選択します。</li>
-        <li>左側のメニューから <code>Service Workers</code> を選び、<code>sw.js</code>が有効化（activated and is running）されていることを確認します。</li>
-        <li>次に <code>Network</code> タブに移動し、<code>Offline</code> のチェックボックスをオンにします。</li>
-        <li><strong>その状態でページをリロード（<code>F5</code>キー）します。</strong></li>
-      </ol>
-      
-      <img src="https://via.placeholder.com/800x400.png?text=DevTools+Offline+Mode+-+Page+Reloads+Successfully" alt="デベロッパーツールでオフラインにしてもページが表示されている様子">
-      
-      <p>どうでしょうか？インターネット接続がない状態にも関わらず、ページが表示されたはずです。これがService Workerによるオフライン対応です！</p>
+      <p>上記の実装により、一度サイトにアクセスすれば、指定されたファイルがキャッシュされる。以降、オフライン時でもキャッシュからページが読み込まれるようになる。</p>
     </section>
 
     <section>
-      <h2>5. まとめ</h2>
-      <p>今回は、Service Workerを利用してWebサイトをオフライン対応させる基本的な方法を解説しました。</p>
+      <h2>5. 結論と今後の展望</h2>
+      <p>本稿では、Service Workerを用いてWebアプリケーションに基本的なオフライン機能を追加する実装方法を解説した。要点は以下の通りである。</p>
       <ul>
-        <li><strong>Service Worker</strong> は、Webページの裏で動く独立したプログラム。</li>
-        <li><strong><code>install</code></strong> イベントで、必要なファイルをあらかじめキャッシュする。</li>
-        <li><strong><code>fetch</code></strong> イベントで、リクエストを横取りし、キャッシュがあればそれを返す。</li>
+        <li><strong>Service Worker</strong>は、通信を仲介するクライアントサイドプロキシとして機能する。</li>
+        <li><strong>`install`イベント</strong>を利用して、アプリケーションのコアアセットをプリキャッシュする。</li>
+        <li><strong>`fetch`イベント</strong>をインターセプトし、「キャッシュファースト」戦略によりオフライン応答を実現する。</li>
       </ul>
-      <p>この仕組みを応用すれば、「キャッシュを優先しつつ、裏側で新しい情報を更新する」といった、より高度なキャッシュ戦略も実装可能です。</p>
-      <p>Service Workerを使いこなすことは、ユーザーに快適な体験を提供する上で非常に強力な武器となります。ぜひ、ご自身のポートフォリオサイトなどにも導入してみてはいかがでしょうか。</p>
+      <p>ここで紹介したのは最も基本的なキャッシュ戦略だが、Service Workerはより高度な戦略の実装も可能である。例えば、キャッシュを返しつつバックグラウンドでリソースを更新する「<strong>Stale-While-Revalidate</strong>」戦略や、ネットワーク接続を優先する「ネットワークファースト」戦略など、アプリケーションの要件に応じて最適なものを選択できる。</p>
+      <p>Service Workerを適切に活用することは、ネットワークへの依存度を低減し、アプリケーションの信頼性とユーザーエクスペリエンスを飛躍的に向上させるための重要な技術である。</p>
     </section>
 
     <hr>

@@ -4,13 +4,10 @@
 const CACHE_NAME = 'my-offline-cache-v1';
 // キャッシュするファイルのリスト
 const FILES_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js'
-  // 注意: Service WorkerはHTTPS経由で配信される必要があるため、
-  // placeholder.comのような外部サイトの画像をキャッシュリストに含めるのは、
-  // CORSの問題やキャッシュ戦略を考慮する必要があり、今回は簡単のため含めていません。
+  './',
+  './index.html',
+  './style.css',
+  './app.js'
 ];
 
 // `self` はService Worker自身を指す

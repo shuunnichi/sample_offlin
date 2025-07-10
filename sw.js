@@ -7,7 +7,10 @@ const FILES_TO_CACHE = [
   './',
   './index.html',
   './style.css',
-  './app.js'
+  './app.js',
+  './diagram_proxy.svg',
+  './diagram_lifecycle.svg',
+  './diagram_cache_first.svg'
 ];
 
 // `self` はService Worker自身を指す

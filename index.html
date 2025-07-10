@@ -33,7 +33,7 @@
         <li><strong>DOMへの非アクセス:</strong> セキュリティ上の理由から、Service Workerは直接DOMにアクセスすることはできない。ページとの通信には`postMessage`インターフェースを使用する。</li>
       </ul>
       <p>オフライン対応の実装において最も重要なのは、このプロキシ機能である。Service Workerは、ネットワークリクエストを監視し、リクエストされたリソースがキャッシュに存在する場合はネットワークへのアクセスを行わずにキャッシュから応答を返す。このメカニズムが、オフライン時におけるアプリケーションの可用性を実現する。</p>
-      <img src="https://via.placeholder.com/800x250.png?text=Browser+%3C-%3E+Service+Worker+(Proxy)+%3C-%3E+Network" alt="Service Workerのプロキシとしての役割を示す図">
+      <img src="diagram_proxy.svg" alt="Service Workerのプロキシとしての役割を示す図" class="diagram">
     </section>
 
     <section>
@@ -43,7 +43,11 @@
         <li><strong>インストール (installイベント)</strong>: Service Workerがブラウザに初めて登録される際に一度だけ発生する。このフェーズで、オフライン時に必要となる静的リソース（アセット）を事前にCache Storage APIを用いてキャッシュする。これを「プリキャッシュ」と呼ぶ。</li>
         <li><strong>リクエスト処理 (fetchイベント)</strong>: Service Workerのスコープ内でネットワークリクエストが発生するたびにトリガーされる。ここでリクエストをインターセプトし、採用するキャッシュ戦略に基づいて応答を生成する。</li>
       </ol>
+      <p>Service Workerは登録(register)されると、以下のライフサイクルに従って状態が遷移します。</p>
+      <img src="diagram_lifecycle.svg" alt="Service Workerのライフサイクル図" class="diagram">
       <p>本稿で実装するのは、「キャッシュファースト（Cache First）」と呼ばれる戦略である。これは、まずキャッシュの存在を確認し、ヒットすればキャッシュから応答する。キャッシュに存在しない場合のみ、ネットワークへリクエストをフォールスルーさせる戦略である。</p>
+      <p>この戦略の処理フローは以下の図で表せます。</p>
+      <img src="diagram_cache_first.svg" alt="キャッシュファースト戦略のフロー図" class="diagram">
     </section>
 
     <section>

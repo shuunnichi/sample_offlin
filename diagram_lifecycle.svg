@@ -1,0 +1,49 @@
+<svg width="800" height="300" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <style>
+    .state { stroke-width: 2; rx: 8; }
+    .installing { fill: #fff9c4; stroke: #fbc02d; }
+    .waiting { fill: #e1f5fe; stroke: #0288d1; }
+    .activating { fill: #c8e6c9; stroke: #388e3c; }
+    .activated { fill: #dcedc8; stroke: #689f38; }
+    .redundant { fill: #f5f5f5; stroke: #616161; }
+    .arrow { stroke: #424242; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .text { fill: #212121; text-anchor: middle; font-size: 14px; }
+    .event { fill: #555; text-anchor: middle; font-size: 12px; font-style: italic; }
+  </style>
+
+  <!-- States -->
+  <rect x="25" y="100" width="130" height="60" class="state installing" />
+  <text x="90" y="135" class="text">インストール中</text>
+
+  <rect x="225" y="100" width="130" height="60" class="state waiting" />
+  <text x="290" y="125" class="text">待機中</text>
+  <text x="290" y="145" class="text">(Installed)</text>
+
+  <rect x="425" y="100" width="130" height="60" class="state activating" />
+  <text x="490" y="135" class="text">有効化中</text>
+
+  <rect x="625" y="100" width="130" height="60" class="state activated" />
+  <text x="690" y="125" class="text">有効</text>
+  <text x="690" y="145" class="text">(Activated)</text>
+
+  <rect x="425" y="200" width="130" height="60" class="state redundant" />
+  <text x="490" y="235" class="text">冗長</text>
+
+  <!-- Arrows and Labels -->
+  <path d="M155 130 H 220" class="arrow" />
+  <text x="190" y="95" class="event">installイベント</text>
+
+  <path d="M355 130 H 420" class="arrow" />
+  <text x="390" y="95" class="event">activateイベント</text>
+
+  <path d="M555 130 H 620" class="arrow" />
+
+  <path d="M490 160 V 195" class="arrow" />
+  <text x="430" y="185" class="event" text-anchor="start">新しいSWが有効化</text>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#424242" />
+    </marker>
+  </defs>
+</svg>

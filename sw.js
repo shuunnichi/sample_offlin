@@ -6,11 +6,8 @@ const CACHE_NAME = 'my-offline-cache-v1';
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
-  './diagram_proxy.svg',
-  './diagram_lifecycle.svg',
-  './diagram_cache_first.svg'
+  './main.css',
+  './app.js'
 ];
 
 // `self` はService Worker自身を指す

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Service WorkerによるPWAオフライン対応技術の解説と実装</title>
-  <link rel="stylesheet" href="style.css">
+  <title>情報課題2</title>
+  <link rel="stylesheet" href="main.css">
   <!-- コードを見やすくするためのシンタックスハイライト(Prism.js)のCSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
 </head>
@@ -55,7 +55,7 @@
       <p>以下のファイル構成を想定し、Service Workerによるオフライン対応を実装する。</p>
       <pre><code class="language-text">my-offline-site/
 ├── index.html
-├── style.css
+├── main.css
 ├── app.js       (Service Workerの登録処理)
 └── sw.js        (Service Worker本体)</code></pre>
 
@@ -85,7 +85,7 @@ const CACHE_NAME = 'my-offline-cache-v1';
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css',
+  './main.css',
   './app.js'
 ];
 
@@ -141,6 +141,11 @@ self.addEventListener('fetch', (event) => {
     <hr>
     
     <footer>
+      <p>関連リンク</p>
+      <ul>
+        <li><a href="https://developer.mozilla.org/ja/docs/Web/API/Service_Worker_API">Service Worker API (MDN)</a></li>
+        <li><a href="https://web.dev/learn/pwa">Learn PWA (web.dev)</a></li>
+      </ul>
       <p class="time-record">本コンテンツの作成時間：約6時間</p>
     </footer>
 
